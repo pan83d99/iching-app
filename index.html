@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="周易灵感择数器">
+  <title>周易灵感择数器 · 易经时空择数</title>
+  <style>
+    :root {
+      --bg-color: #080c14;
+      --card-bg: rgba(22, 28, 42, 0.75);
+      --card-border: rgba(203, 163, 88, 0.25);
+      --gold-primary: #d4af37;
+      --gold-light: #f7e09e;
+      --gold-dark: #8c6d23;
+      --text-main: #f0f2f5;
+      --text-muted: #8b9bb4;
+      --red-ball: radial-gradient(circle at 35% 35%, #ff6b6b, #c92a2a 70%, #5c0f0f);
+      --blue-ball: radial-gradient(circle at 35% 35%, #4dabf7, #1971c2 70%, #0c3461);
+      --green-ball: radial-gradient(circle at 35% 35%, #51cf66, #2b8a3e 70%, #13421b);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 24px);
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(ellipse at 50% 0%, rgba(203, 163, 88, 0.12) 0%, transparent 70%),
+        radial-gradient(circle at 50% 100%, rgba(13, 22, 38, 0.8) 0%, transparent 100%);
+    }
+
+    header {
+      text-align: center;
+      margin-top: 10px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 1.45rem;
+      letter-spacing: 2px;
+      color: var(--gold-light);
+      font-weight: 500;
+      text-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      letter-spacing: 1px;
+    }
+
+    /* 模式切换标签 */
+    .tabs {
+      display: flex;
+      background: rgba(12, 17, 28, 0.9);
+      padding: 4px;
+      border-radius: 30px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 16px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 0;
+      font-size: 0.9rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      font-weight: 500;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+      color: #0b0f19;
+      font-weight: 600;
+      box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
+    }
+
+    /* 卡片容器 */
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      width: 100%;
+      max-width: 390px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      margin-bottom: 16px;
+    }
+
+    /* 卦象与时空区 */
+    .iching-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .timestamp-box {
+      font-size: 0.75rem;
+      color: var(--gold-primary);
+      background: rgba(212, 175, 55, 0.08);
+      padding: 4px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      margin-bottom: 14px;
+      font-family: monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .hexagram-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: 100%;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .hex-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(8, 12, 20, 0.5);
+      border-radius: 12px;
+      padding: 10px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .hex-title {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .hex-name {
+      font-size: 1.05rem;
+      color: var(--gold-light);
+      font-weight: 600;
+      margin-top: 6px;
+      letter-spacing: 1px;
+    }
+
+    /* 爻线绘制 */
+    .lines-wrapper {
+      display: flex;
+      flex-direction: column-reverse; /* 自下而上初爻到上爻 */
+      gap: 5px;
+      width: 80px;
+    }
+
+    .hex-line {
+      height: 7px;
+      width: 100%;
+      position: relative;
+    }
+
+    /* 阳爻：连条 */
+    .hex-line.yang {
+      background: linear-gradient(90deg, #997b32, var(--gold-light), #997b32);
+      border-radius: 4px;
+    }
+
+    /* 阴爻：断开双节 */
+    .hex-line.yin {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .hex-line.yin::before, .hex-line.yin::after {
+      content: '';
+      width: 44%;
+      height: 100%;
+      background: linear-gradient(90deg, #997b32, var(--gold-light), #997b32);
+      border-radius: 4px;
+    }
+
+    .hex-line.moving {
+      box-shadow: 0 0 8px rgba(255, 215, 0, 0.9);
+      filter: brightness(1.3);
+    }
+
+    /* 空待状态爻线 */
+    .hex-line.placeholder {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+    }
+
+    .meta-details {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      padding-top: 10px;
+    }
+
+    .meta-item b {
+      color: var(--gold-primary);
+      font-weight: 500;
+    }
+
+    /* 号码展示区 */
+    .ball-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 4px;
+      min-height: 80px;
+      align-items: center;
+    }
+
+    .ball {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.35);
+      animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      position: relative;
+    }
+
+    .ball .element-tag {
+      font-size: 0.55rem;
+      font-weight: 400;
+      margin-top: -2px;
+      opacity: 0.85;
+    }
+
+    .ball.red { background: var(--red-ball); }
+    .ball.blue { background: var(--blue-ball); }
+    .ball.green { background: var(--green-ball); }
+
+    .ball.ssq-blue {
+      background: var(--blue-ball);
+      box-shadow: 0 0 14px rgba(77, 171, 247, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+    }
+
+    .ball-separator {
+      font-size: 1.3rem;
+      color: var(--gold-primary);
+      font-weight: 300;
+      align-self: center;
+    }
+
+    .empty-hint {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+    }
+
+    /* 起卦按钮 */
+    .btn-action-wrapper {
+      width: 100%;
+      max-width: 390px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .trigger-btn {
+      width: 100%;
+      padding: 16px 0;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 223, 128, 0.4);
+      background: linear-gradient(135deg, #dfba60 0%, #a87922 50%, #68480d 100%);
+      color: #0b0f19;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(203, 163, 88, 0.35);
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .trigger-btn:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 10px rgba(203, 163, 88, 0.2);
+      filter: brightness(0.95);
+    }
+
+    .btn-tip {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* 辅助功能：复制与历史记录 */
+    .utility-bar {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 390px;
+      margin-bottom: 20px;
+    }
+
+    .btn-sub {
+      flex: 1;
+      padding: 9px 0;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-sub:active {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    /* 历史记录抽屉面板 */
+    .history-card {
+      width: 100%;
+      max-width: 390px;
+      display: none;
+      margin-bottom: 24px;
+    }
+
+    .history-card.show {
+      display: block;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      color: var(--gold-light);
+    }
+
+    .history-list {
+      max-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+    }
+
+    .history-time {
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .history-nums {
+      color: var(--gold-primary);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* 吐司通知弹窗 */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      background: rgba(15, 20, 30, 0.95);
+      border: 1px solid var(--gold-primary);
+      color: var(--gold-light);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s ease;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.4); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1><span>☯</span> 周易灵感择数器</h1>
+    <div class="subtitle">起心动念 · 触机起卦 · 瞬时定相</div>
+  </header>
+
+  <!-- 模式切换 -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tabMarkSix" onclick="switchMode('marksix')">六合彩 (49选6)</button>
+    <button class="tab-btn" id="tabSSQ" onclick="switchMode('ssq')">双色球 (6+1)</button>
+  </div>
+
+  <!-- 卦象与时空切片卡片 -->
+  <div class="glass-card iching-display">
+    <div class="timestamp-box" id="timestampBox">时空切片：虚位以待 · 静候机发</div>
+
+    <div class="hexagram-grid">
+      <!-- 本卦 -->
+      <div class="hex-col">
+        <div class="hex-title">本卦 (当下之机)</div>
+        <div class="lines-wrapper" id="primaryLines">
+          <div class="hex-line placeholder"></div>
+          <div class="hex-line placeholder"></div>
+          <div class="hex-line placeholder"></div>
+          <div class="hex-line placeholder"></div>
+          <div class="hex-line placeholder"></div>
+          <div class="hex-line placeholder"></div>
+        </div>
+        <div class="hex-name" id="primaryName">待起卦</div>
+      </div>
+
+      <!-- 变卦 -->
+      <div class="hex-col">
+        <div class="hex-title">变卦 (未来流向)</div>
+        <div class="lines-wrapper" id="transformedLines">
+          <div class="hex-line placeholder"></div>
+          <div class="hex-line placeholder"></div>
+          <div class="hex-line placeholder"></div>
+          <div class="hex-line placeholder"></div>
+          <div class="hex-line placeholder"></div>
+          <div class="hex-line placeholder"></div>
+        </div>
+        <div class="hex-name" id="transformedName">待演化</div>
+      </div>
+    </div>
+
+    <div class="meta-details">
+      <div class="meta-item">动爻：<b id="movingLineText">-</b></div>
+      <div class="meta-item">互卦：<b id="mutualText">-</b></div>
+      <div class="meta-item">时空数理：<b id="cosmicNumText">-</b></div>
+    </div>
+  </div>
+
+  <!-- 结果号码展示卡片 -->
+  <div class="glass-card">
+    <div class="ball-container" id="ballContainer">
+      <div class="empty-hint">点击下方金钮 · 捕当下瞬时机变</div>
+    </div>
+  </div>
+
+  <!-- 交互核心按钮 -->
+  <div class="btn-action-wrapper">
+    <button class="trigger-btn" id="btnCast" onclick="triggerCast()">
+      <span>起心动念 · 触机起卦</span>
+    </button>
+    <div class="btn-tip">捕捉毫秒级时空脉动，按 Enter 键亦可起卦</div>
+  </div>
+
+  <!-- 辅助功能条 -->
+  <div class="utility-bar">
+    <button class="btn-sub" id="btnCopy" onclick="copyResult()">📋 复制号码</button>
+    <button class="btn-sub" onclick="toggleHistory()">📜 历史卦印</button>
+  </div>
+
+  <!-- 历史记录面板 -->
+  <div class="glass-card history-card" id="historyCard">
+    <div class="history-header">
+      <span>近十次动念择数存根</span>
+      <span style="cursor: pointer; opacity: 0.7;" onclick="clearHistory()">清空</span>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div class="toast" id="toast">已复制到剪贴板</div>
+
+  <script>
+    // 先天八卦映射
+    const TRIGRAMS = {
+      1: { name: "乾", symbol: "天", lines: [1, 1, 1] },
+      2: { name: "兑", symbol: "泽", lines: [1, 1, 0] },
+      3: { name: "离", symbol: "火", lines: [1, 0, 1] },
+      4: { name: "震", symbol: "雷", lines: [1, 0, 0] },
+      5: { name: "巽", symbol: "风", lines: [0, 1, 1] },
+      6: { name: "坎", symbol: "水", lines: [0, 1, 0] },
+      7: { name: "艮", symbol: "山", lines: [0, 0, 1] },
+      8: { name: "坤", symbol: "地", lines: [0, 0, 0] }
+    };
+
+    // 六合彩波色属性定义
+    const MARK_SIX_COLORS = {
+      red: [1, 2, 7, 8, 12, 13, 18, 19, 23, 24, 29, 30, 34, 35, 40, 45, 46],
+      blue: [3, 4, 9, 10, 14, 15, 20, 25, 26, 31, 36, 37, 41, 42, 47, 48],
+      green: [5, 6, 11, 16, 17, 21, 22, 27, 28, 32, 33, 38, 39, 43, 44, 49]
+    };
+
+    let currentMode = 'marksix';
+    let lastResult = null;
+    let audioCtx = null;
+
+    // Web Audio 合成铜磬悠扬音效
+    function playChime() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const now = audioCtx.currentTime;
+
+        // 铜磬双泛音设计
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, now + 1.2); // A5
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 1.8);
+      } catch (e) {
+        console.log("Audio not supported or blocked", e);
+      }
+    }
+
+    // 触感反馈
+    function triggerHaptic() {
+      if (navigator.vibrate) {
+        navigator.vibrate([25, 40, 20]);
+      }
+    }
+
+    // 模式切换（仅切换状态，绝不自动出号）
+    function switchMode(mode) {
+      if (currentMode === mode) return;
+      currentMode = mode;
+      document.getElementById('tabMarkSix').classList.toggle('active', mode === 'marksix');
+      document.getElementById('tabSSQ').classList.toggle('active', mode === 'ssq');
+
+      // 重置为待机静候态
+      resetToPlaceholder();
+    }
+
+    function resetToPlaceholder() {
+      document.getElementById('timestampBox').innerText = '时空切片：虚位以待 · 静候机发';
+      document.getElementById('primaryName').innerText = '待起卦';
+      document.getElementById('transformedName').innerText = '待演化';
+      document.getElementById('movingLineText').innerText = '-';
+      document.getElementById('mutualText').innerText = '-';
+      document.getElementById('cosmicNumText').innerText = '-';
+
+      const placeholderLines = Array(6).fill('<div class="hex-line placeholder"></div>').join('');
+      document.getElementById('primaryLines').innerHTML = placeholderLines;
+      document.getElementById('transformedLines').innerHTML = placeholderLines;
+
+      const ballContainer = document.getElementById('ballContainer');
+      const modeName = currentMode === 'marksix' ? '六合彩' : '双色球';
+      ballContainer.innerHTML = `<div class="empty-hint">当前模式：${modeName} · 点击金钮起卦</div>`;
+      lastResult = null;
+    }
+
+    function modVal(val, m) {
+      const r = val % m;
+      return r === 0 ? m : r;
+    }
+
+    function ensureUnique(base, step, pool, maxVal) {
+      let cand = modVal(base, maxVal);
+      while (pool.includes(cand)) {
+        cand = modVal(cand + step, maxVal);
+      }
+      return cand;
+    }
+
+    function getLinesKey(lines) {
+      return lines.join('');
+    }
+
+    const LINES_INDEX = {};
+    for (let k in TRIGRAMS) {
+      LINES_INDEX[getLinesKey(TRIGRAMS[k].lines)] = parseInt(k);
+    }
+
+    // 核心起卦排盘
+    function triggerCast() {
+      playChime();
+      triggerHaptic();
+
+      const now = new Date();
+      const ms = now.getMilliseconds();
+      const perfNow = Math.floor(performance.now() * 1000) % 100000;
+
+      const y = now.getFullYear();
+      const m = now.getMonth() + 1;
+      const d = now.getDate();
+      const h = now.getHours();
+      const min = now.getMinutes();
+      const s = now.getSeconds();
+
+      // 梅花易数时间取数
+      const upperNum = modVal(y + m + d, 8);
+      const lowerNum = modVal(y + m + d + h + min + s, 8);
+      const movingLine = modVal(y + m + d + h + min + s + ms, 6);
+
+      const upperTrigram = TRIGRAMS[upperNum];
+      const lowerTrigram = TRIGRAMS[lowerNum];
+
+      // 构造本卦六爻
+      const primaryLines = [...lowerTrigram.lines, ...upperTrigram.lines];
+
+      // 构造互卦 (二三四爻为下，三四五爻为上)
+      const mutLowerNum = LINES_INDEX[getLinesKey([primaryLines[1], primaryLines[2], primaryLines[3]])] || 1;
+      const mutUpperNum = LINES_INDEX[getLinesKey([primaryLines[2], primaryLines[3], primaryLines[4]])] || 1;
+
+      // 构造变卦
+      const transLines = [...primaryLines];
+      transLines[movingLine - 1] = 1 - transLines[movingLine - 1];
+      const transLowerNum = LINES_INDEX[getLinesKey(transLines.slice(0, 3))] || 1;
+      const transUpperNum = LINES_INDEX[getLinesKey(transLines.slice(3, 6))] || 1;
+
+      // 渲染爻线
+      renderLines('primaryLines', primaryLines, movingLine);
+      renderLines('transformedLines', transLines, null);
+
+      // 卦名显示
+      document.getElementById('primaryName').innerText = `${upperTrigram.name}为${upperTrigram.symbol} / ${lowerTrigram.name}为${lowerTrigram.symbol}`;
+      document.getElementById('transformedName').innerText = `${TRIGRAMS[transUpperNum].name}上 / ${TRIGRAMS[transLowerNum].name}下`;
+
+      document.getElementById('movingLineText').innerText = `第 ${movingLine} 爻`;
+      document.getElementById('mutualText').innerText = `${TRIGRAMS[mutUpperNum].name} / ${TRIGRAMS[mutLowerNum].name}`;
+      
+      const cosmicSeed = (upperNum * 7 + lowerNum * 5 + movingLine * 3 + (perfNow % 49)) % 99 + 1;
+      document.getElementById('cosmicNumText').innerText = `${cosmicSeed}`;
+
+      const timeStr = `${y}-${pad(m)}-${pad(d)} ${pad(h)}:${pad(min)}:${pad(s)}.${pad(ms, 3)}`;
+      document.getElementById('timestampBox').innerText = `时空切片：${timeStr}`;
+
+      // 选号推演算法
+      let numbers = [];
+      if (currentMode === 'marksix') {
+        numbers = generateMarkSix(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfNow);
+        renderMarkSixBalls(numbers);
+        lastResult = { mode: '六合彩', time: timeStr, balls: numbers.join(', ') };
+      } else {
+        const ssqResult = generateSSQ(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfNow, ms);
+        renderSSQBalls(ssqResult);
+        lastResult = { mode: '双色球', time: timeStr, balls: `红:${ssqResult.reds.join(',')} 蓝:${ssqResult.blue}` };
+      }
+
+      saveHistory(lastResult);
+    }
+
+    function renderLines(containerId, lines, movingLineIdx) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      lines.forEach((val, idx) => {
+        const lineEl = document.createElement('div');
+        const isMoving = movingLineIdx === (idx + 1);
+        lineEl.className = `hex-line ${val === 1 ? 'yang' : 'yin'} ${isMoving ? 'moving' : ''}`;
+        container.appendChild(lineEl);
+      });
+    }
+
+    function generateMarkSix(up, low, mov, mutUp, transUp, perf) {
+      const seeds = [
+        up * 6 + low,
+        mov * 8 + low,
+        mutUp * 7 + mov,
+        transUp * 5 + up,
+        (up + low + mov) * 3,
+        (perf % 49) + 1
+      ];
+      const steps = [up, low, mov, mutUp, transUp, 7];
+      const result = [];
+      seeds.forEach((seed, i) => {
+        const num = ensureUnique(seed, steps[i], result, 49);
+        result.push(num);
+      });
+      return result.sort((a, b) => a - b);
+    }
+
+    function renderMarkSixBalls(nums) {
+      const container = document.getElementById('ballContainer');
+      container.innerHTML = '';
+      nums.forEach(n => {
+        let colorClass = 'red';
+        if (MARK_SIX_COLORS.blue.includes(n)) colorClass = 'blue';
+        if (MARK_SIX_COLORS.green.includes(n)) colorClass = 'green';
+
+        const b = document.createElement('div');
+        b.className = `ball ${colorClass}`;
+        b.innerHTML = `<span>${pad(n)}</span><span class="element-tag">${getColorName(colorClass)}</span>`;
+        container.appendChild(b);
+      });
+    }
+
+    function getColorName(c) {
+      return c === 'red' ? '红波' : (c === 'blue' ? '蓝波' : '绿波');
+    }
+
+    function generateSSQ(up, low, mov, mutUp, transUp, perf, ms) {
+      const seeds = [
+        up * 5 + low,
+        mov * 6 + low,
+        mutUp * 7 + mov,
+        transUp * 4 + up,
+        (up + low + mov) * 2,
+        (perf % 33) + 1
+      ];
+      const steps = [up, low, mov, mutUp, transUp, 5];
+      const reds = [];
+      seeds.forEach((seed, i) => {
+        const num = ensureUnique(seed, steps[i], reds, 33);
+        reds.push(num);
+      });
+      reds.sort((a, b) => a - b);
+
+      const blueSeed = (up + low) * transUp + (mov * 7);
+      const blue = modVal(blueSeed + (ms % 16), 16);
+
+      return { reds, blue };
+    }
+
+    function renderSSQBalls(res) {
+      const container = document.getElementById('ballContainer');
+      container.innerHTML = '';
+      res.reds.forEach(n => {
+        const b = document.createElement('div');
+        b.className = 'ball red';
+        b.innerHTML = `<span>${pad(n)}</span><span class="element-tag">红</span>`;
+        container.appendChild(b);
+      });
+
+      const sep = document.createElement('div');
+      sep.className = 'ball-separator';
+      sep.innerText = '+';
+      container.appendChild(sep);
+
+      const blueBall = document.createElement('div');
+      blueBall.className = 'ball ssq-blue';
+      blueBall.innerHTML = `<span>${pad(res.blue)}</span><span class="element-tag">蓝</span>`;
+      container.appendChild(blueBall);
+    }
+
+    function pad(n, len = 2) {
+      return String(n).padStart(len, '0');
+    }
+
+    function copyResult() {
+      if (!lastResult) {
+        showToast("请先点击起卦生成号码");
+        return;
+      }
+      const text = `【${lastResult.mode}·周易择数】\n号码：${lastResult.balls}\n时空：${lastResult.time}`;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("已复制卦数到剪贴板");
+      }).catch(() => {
+        showToast("复制失败，请截图保存");
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1600);
+    }
+
+    // 本地存根存储
+    function saveHistory(item) {
+      let records = JSON.parse(localStorage.getItem('iching_history') || '[]');
+      records.unshift(item);
+      if (records.length > 10) records.pop();
+      localStorage.setItem('iching_history', JSON.stringify(records));
+      loadHistory();
+    }
+
+    function loadHistory() {
+      const records = JSON.parse(localStorage.getItem('iching_history') || '[]');
+      const listEl = document.getElementById('historyList');
+      if (records.length === 0) {
+        listEl.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:10px;">暂无卦印存根</div>';
+        return;
+      }
+      listEl.innerHTML = records.map(r => `
+        <div class="history-item">
+          <div>
+            <span style="color:var(--gold-light); font-weight:500;">[${r.mode}]</span>
+            <span class="history-nums">${r.balls}</span>
+          </div>
+          <div class="history-time">${r.time.split(' ')[1] || ''}</div>
+        </div>
+      `).join('');
+    }
+
+    function toggleHistory() {
+      const card = document.getElementById('historyCard');
+      card.classList.toggle('show');
+      if (card.classList.contains('show')) loadHistory();
+    }
+
+    function clearHistory() {
+      localStorage.removeItem('iching_history');
+      loadHistory();
+      showToast("存根已清空");
+    }
+
+    // 键盘支持：回车键起卦
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') triggerCast();
+    });
+
+    // 初始载入
+    loadHistory();
+  </script>
+</body>
+</html>
