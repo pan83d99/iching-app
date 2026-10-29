@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="周易灵感择数器">
+  <meta name="apple-mobile-web-app-title" content="易经灵感择数">
   <title>周易灵感择数器 · 易经时空择数</title>
+
+  <!-- 透明底色 · 流金浮雕“易”字专属 App 图标 (iOS & Android 全适配) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='gold' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23fce38a'/%3E%3Cstop offset='50%25' stop-color='%23d4af37'/%3E%3Cstop offset='100%25' stop-color='%238c6218'/%3E%3C/linearGradient%3E%3Cfilter id='glow' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeDropShadow dx='0' dy='4' stdDeviation='6' flood-color='%23000' flood-opacity='0.6'/%3E%3C/filter%3E%3C/defs%3E%3Ccircle cx='90' cy='90' r='82' fill='none' stroke='url(%23gold)' stroke-width='4' opacity='0.85' stroke-dasharray='12 6'/%3E%3Ccircle cx='90' cy='90' r='73' fill='none' stroke='url(%23gold)' stroke-width='1.5' opacity='0.5'/%3E%3Ctext x='90' y='116' font-size='82' font-family='Noto Serif SC, Songti SC, STSong, SimSun, serif' font-weight='bold' fill='url(%23gold)' text-anchor='middle' filter='url(%23glow)'%3E%E6%98%93%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='gold' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23fce38a'/%3E%3Cstop offset='50%25' stop-color='%23d4af37'/%3E%3Cstop offset='100%25' stop-color='%238c6218'/%3E%3C/linearGradient%3E%3Cfilter id='glow' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeDropShadow dx='0' dy='4' stdDeviation='6' flood-color='%23000' flood-opacity='0.6'/%3E%3C/filter%3E%3C/defs%3E%3Ccircle cx='90' cy='90' r='82' fill='none' stroke='url(%23gold)' stroke-width='4' opacity='0.85' stroke-dasharray='12 6'/%3E%3Ccircle cx='90' cy='90' r='73' fill='none' stroke='url(%23gold)' stroke-width='1.5' opacity='0.5'/%3E%3Ctext x='90' y='116' font-size='82' font-family='Noto Serif SC, Songti SC, STSong, SimSun, serif' font-weight='bold' fill='url(%23gold)' text-anchor='middle' filter='url(%23glow)'%3E%E6%98%93%3C/text%3E%3C/svg%3E">
+
   <style>
     :root {
       --bg-color: #080c14;
@@ -70,7 +75,6 @@
       letter-spacing: 1px;
     }
 
-    /* 模式切换标签 */
     .tabs {
       display: flex;
       background: rgba(12, 17, 28, 0.9);
@@ -103,7 +107,6 @@
       box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
     }
 
-    /* 卡片容器 */
     .glass-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -117,7 +120,6 @@
       margin-bottom: 16px;
     }
 
-    /* 卦象与时空区 */
     .iching-display {
       display: flex;
       flex-direction: column;
@@ -168,7 +170,6 @@
       letter-spacing: 1px;
     }
 
-    /* 爻线绘制 */
     .lines-wrapper {
       display: flex;
       flex-direction: column-reverse;
@@ -226,7 +227,6 @@
       font-weight: 500;
     }
 
-    /* 号码展示区 */
     .ball-container {
       display: flex;
       flex-wrap: wrap;
@@ -283,7 +283,6 @@
       letter-spacing: 1px;
     }
 
-    /* 起卦按钮 */
     .btn-action-wrapper {
       width: 100%;
       max-width: 390px;
@@ -324,7 +323,6 @@
       margin-top: 8px;
     }
 
-    /* 辅助功能与手动输入卡片 */
     .utility-bar {
       display: flex;
       gap: 8px;
@@ -351,7 +349,6 @@
       color: var(--gold-light);
     }
 
-    /* 手动输入时间折叠面板 */
     .custom-time-panel {
       width: 100%;
       max-width: 390px;
@@ -417,7 +414,6 @@
       color: #0b0f19;
     }
 
-    /* 历史记录面板 */
     .history-card {
       width: 100%;
       max-width: 390px;
@@ -503,14 +499,12 @@
     <div class="subtitle">起心动念 · 触机起卦 · 瞬时定相</div>
   </header>
 
-  <!-- 三模式标签切换 -->
   <div class="tabs">
     <button class="tab-btn active" id="tabMarkSix" onclick="switchMode('marksix')">六合彩(49选6)</button>
     <button class="tab-btn" id="tabSSQ" onclick="switchMode('ssq')">福彩·双色球</button>
     <button class="tab-btn" id="tabDLT" onclick="switchMode('dlt')">体彩·大乐透</button>
   </div>
 
-  <!-- 卦象卡片 -->
   <div class="glass-card iching-display">
     <div class="timestamp-box" id="timestampBox">时空切片：虚位以待 · 静候机发</div>
 
@@ -549,14 +543,12 @@
     </div>
   </div>
 
-  <!-- 结果号码展示卡片 -->
   <div class="glass-card">
     <div class="ball-container" id="ballContainer">
       <div class="empty-hint">点击下方金钮 · 捕当下瞬时机变</div>
     </div>
   </div>
 
-  <!-- 交互核心按钮（当前时刻） -->
   <div class="btn-action-wrapper">
     <button class="trigger-btn" id="btnCast" onclick="triggerCast()">
       <span>起心动念 · 触机起卦</span>
@@ -564,14 +556,12 @@
     <div class="btn-tip">捕捉当前毫秒时空脉动，按 Enter 键亦可起卦</div>
   </div>
 
-  <!-- 辅助功能条 -->
   <div class="utility-bar">
     <button class="btn-sub" id="btnToggleTime" onclick="toggleCustomTimePanel()">⏳ 指定时空补算</button>
     <button class="btn-sub" id="btnCopy" onclick="copyResult()">📋 复制号码</button>
     <button class="btn-sub" onclick="toggleHistory()">📜 历史卦印</button>
   </div>
 
-  <!-- 手动指定时间补算抽屉 -->
   <div class="custom-time-panel" id="customTimePanel">
     <div class="custom-time-title">
       <span>输入记忆中的动念时空：</span>
@@ -583,7 +573,6 @@
     <button class="btn-calc-custom" onclick="triggerCustomCast()">按此时空起卦推演</button>
   </div>
 
-  <!-- 历史记录面板 -->
   <div class="glass-card history-card" id="historyCard">
     <div class="history-header">
       <span>近十次动念择数存根</span>
@@ -616,7 +605,6 @@
     let lastResult = null;
     let audioCtx = null;
 
-    // 沉稳大古钟 / 幽深厚铜磬音效
     function playChime() {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -711,7 +699,6 @@
       LINES_INDEX[getLinesKey(TRIGRAMS[k].lines)] = parseInt(k);
     }
 
-    // 手动时间面板交互
     function toggleCustomTimePanel() {
       const panel = document.getElementById('customTimePanel');
       const btn = document.getElementById('btnToggleTime');
@@ -728,7 +715,6 @@
       document.getElementById('customDateTimeInput').value = now.toISOString().slice(0, 19);
     }
 
-    // 触发自定义时间起卦
     function triggerCustomCast() {
       const inputVal = document.getElementById('customDateTimeInput').value;
       if (!inputVal) {
@@ -740,7 +726,6 @@
         showToast("时间格式不正确");
         return;
       }
-      // 以手动输入时间的秒与毫秒混合伪随机因子
       const fakeMs = (targetDate.getSeconds() * 17 + targetDate.getMinutes() * 13) % 1000;
       const fakePerf = (targetDate.getTime() % 100000);
       executeIChingCore(targetDate, fakeMs, fakePerf, true);
@@ -748,7 +733,6 @@
       document.getElementById('btnToggleTime').classList.remove('active');
     }
 
-    // 默认触发：当下瞬间起卦
     function triggerCast() {
       const now = new Date();
       const ms = now.getMilliseconds();
@@ -756,7 +740,6 @@
       executeIChingCore(now, ms, perfNow, false);
     }
 
-    // 核心起卦推算底层逻辑
     function executeIChingCore(dt, ms, perfSeed, isCustom) {
       playChime();
       triggerHaptic();
