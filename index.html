@@ -170,7 +170,7 @@
     /* 爻线绘制 */
     .lines-wrapper {
       display: flex;
-      flex-direction: column-reverse; /* 自下而上初爻到上爻 */
+      flex-direction: column-reverse;
       gap: 5px;
       width: 80px;
     }
@@ -181,13 +181,11 @@
       position: relative;
     }
 
-    /* 阳爻：连条 */
     .hex-line.yang {
       background: linear-gradient(90deg, #997b32, var(--gold-light), #997b32);
       border-radius: 4px;
     }
 
-    /* 阴爻：断开双节 */
     .hex-line.yin {
       display: flex;
       justify-content: space-between;
@@ -206,7 +204,6 @@
       filter: brightness(1.3);
     }
 
-    /* 空待状态爻线 */
     .hex-line.placeholder {
       background: rgba(255, 255, 255, 0.08);
       border-radius: 4px;
@@ -325,7 +322,7 @@
       margin-top: 8px;
     }
 
-    /* 辅助功能：复制与历史记录 */
+    /* 辅助功能 */
     .utility-bar {
       display: flex;
       gap: 10px;
@@ -351,7 +348,7 @@
       color: #fff;
     }
 
-    /* 历史记录抽屉面板 */
+    /* 历史记录面板 */
     .history-card {
       width: 100%;
       max-width: 390px;
@@ -401,7 +398,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* 吐司通知弹窗 */
     .toast {
       position: fixed;
       top: 50%;
@@ -449,7 +445,6 @@
     <div class="timestamp-box" id="timestampBox">时空切片：虚位以待 · 静候机发</div>
 
     <div class="hexagram-grid">
-      <!-- 本卦 -->
       <div class="hex-col">
         <div class="hex-title">本卦 (当下之机)</div>
         <div class="lines-wrapper" id="primaryLines">
@@ -463,7 +458,6 @@
         <div class="hex-name" id="primaryName">待起卦</div>
       </div>
 
-      <!-- 变卦 -->
       <div class="hex-col">
         <div class="hex-title">变卦 (未来流向)</div>
         <div class="lines-wrapper" id="transformedLines">
@@ -518,7 +512,6 @@
   <div class="toast" id="toast">已复制到剪贴板</div>
 
   <script>
-    // 先天八卦映射
     const TRIGRAMS = {
       1: { name: "乾", symbol: "天", lines: [1, 1, 1] },
       2: { name: "兑", symbol: "泽", lines: [1, 1, 0] },
@@ -530,7 +523,6 @@
       8: { name: "坤", symbol: "地", lines: [0, 0, 0] }
     };
 
-    // 六合彩波色属性定义
     const MARK_SIX_COLORS = {
       red: [1, 2, 7, 8, 12, 13, 18, 19, 23, 24, 29, 30, 34, 35, 40, 45, 46],
       blue: [3, 4, 9, 10, 14, 15, 20, 25, 26, 31, 36, 37, 41, 42, 47, 48],
@@ -541,7 +533,7 @@
     let lastResult = null;
     let audioCtx = null;
 
-    // Web Audio 合成铜磬悠扬音效
+    // 沉稳大古钟 / 幽深厚铜磬音效（低频温润，悠远浑厚）
     function playChime() {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -549,43 +541,49 @@
         if (!audioCtx) audioCtx = new AudioContext();
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
         const now = audioCtx.currentTime;
 
-        // 铜磬双泛音设计
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, now); // D5
-        osc.frequency.exponentialRampToValueAtTime(880, now + 1.2); // A5
+        // 1. 基频：沉稳大钟底鸣 (146.8 Hz, D3)
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(146.83, now);
+        osc1.frequency.exponentialRampToValueAtTime(144.0, now + 2.5);
+        gain1.gain.setValueAtTime(0.45, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
 
-        gain.gain.setValueAtTime(0.35, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+        // 2. 泛音：温润中频磬音 (220 Hz, A3，去除刺耳尖锐感)
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(220.0, now);
+        gain2.gain.setValueAtTime(0.2, now);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
 
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + 1.8);
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 2.8);
+        osc2.stop(now + 2.8);
       } catch (e) {
         console.log("Audio not supported or blocked", e);
       }
     }
 
-    // 触感反馈
     function triggerHaptic() {
       if (navigator.vibrate) {
         navigator.vibrate([25, 40, 20]);
       }
     }
 
-    // 模式切换（仅切换状态，绝不自动出号）
     function switchMode(mode) {
       if (currentMode === mode) return;
       currentMode = mode;
       document.getElementById('tabMarkSix').classList.toggle('active', mode === 'marksix');
       document.getElementById('tabSSQ').classList.toggle('active', mode === 'ssq');
-
-      // 重置为待机静候态
       resetToPlaceholder();
     }
 
@@ -629,7 +627,6 @@
       LINES_INDEX[getLinesKey(TRIGRAMS[k].lines)] = parseInt(k);
     }
 
-    // 核心起卦排盘
     function triggerCast() {
       playChime();
       triggerHaptic();
@@ -645,7 +642,6 @@
       const min = now.getMinutes();
       const s = now.getSeconds();
 
-      // 梅花易数时间取数
       const upperNum = modVal(y + m + d, 8);
       const lowerNum = modVal(y + m + d + h + min + s, 8);
       const movingLine = modVal(y + m + d + h + min + s + ms, 6);
@@ -653,24 +649,19 @@
       const upperTrigram = TRIGRAMS[upperNum];
       const lowerTrigram = TRIGRAMS[lowerNum];
 
-      // 构造本卦六爻
       const primaryLines = [...lowerTrigram.lines, ...upperTrigram.lines];
 
-      // 构造互卦 (二三四爻为下，三四五爻为上)
       const mutLowerNum = LINES_INDEX[getLinesKey([primaryLines[1], primaryLines[2], primaryLines[3]])] || 1;
       const mutUpperNum = LINES_INDEX[getLinesKey([primaryLines[2], primaryLines[3], primaryLines[4]])] || 1;
 
-      // 构造变卦
       const transLines = [...primaryLines];
       transLines[movingLine - 1] = 1 - transLines[movingLine - 1];
       const transLowerNum = LINES_INDEX[getLinesKey(transLines.slice(0, 3))] || 1;
       const transUpperNum = LINES_INDEX[getLinesKey(transLines.slice(3, 6))] || 1;
 
-      // 渲染爻线
       renderLines('primaryLines', primaryLines, movingLine);
       renderLines('transformedLines', transLines, null);
 
-      // 卦名显示
       document.getElementById('primaryName').innerText = `${upperTrigram.name}为${upperTrigram.symbol} / ${lowerTrigram.name}为${lowerTrigram.symbol}`;
       document.getElementById('transformedName').innerText = `${TRIGRAMS[transUpperNum].name}上 / ${TRIGRAMS[transLowerNum].name}下`;
 
@@ -683,7 +674,6 @@
       const timeStr = `${y}-${pad(m)}-${pad(d)} ${pad(h)}:${pad(min)}:${pad(s)}.${pad(ms, 3)}`;
       document.getElementById('timestampBox').innerText = `时空切片：${timeStr}`;
 
-      // 选号推演算法
       let numbers = [];
       if (currentMode === 'marksix') {
         numbers = generateMarkSix(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfNow);
@@ -814,7 +804,6 @@
       setTimeout(() => toast.classList.remove('show'), 1600);
     }
 
-    // 本地存根存储
     function saveHistory(item) {
       let records = JSON.parse(localStorage.getItem('iching_history') || '[]');
       records.unshift(item);
@@ -853,12 +842,10 @@
       showToast("存根已清空");
     }
 
-    // 键盘支持：回车键起卦
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') triggerCast();
     });
 
-    // 初始载入
     loadHistory();
   </script>
 </body>
