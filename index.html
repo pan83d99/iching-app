@@ -70,7 +70,7 @@
       letter-spacing: 1px;
     }
 
-    /* 模式切换标签（支持三模式紧凑排布） */
+    /* 模式切换标签 */
     .tabs {
       display: flex;
       background: rgba(12, 17, 28, 0.9);
@@ -290,7 +290,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .trigger-btn {
@@ -324,13 +324,13 @@
       margin-top: 8px;
     }
 
-    /* 辅助功能 */
+    /* 辅助功能与手动输入卡片 */
     .utility-bar {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       width: 100%;
       max-width: 390px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .btn-sub {
@@ -340,14 +340,81 @@
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: var(--text-muted);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
 
-    .btn-sub:active {
-      background: rgba(255, 255, 255, 0.12);
+    .btn-sub:active, .btn-sub.active {
+      background: rgba(212, 175, 55, 0.15);
+      border-color: rgba(212, 175, 55, 0.4);
+      color: var(--gold-light);
+    }
+
+    /* 手动输入时间折叠面板 */
+    .custom-time-panel {
+      width: 100%;
+      max-width: 390px;
+      display: none;
+      margin-bottom: 16px;
+      background: rgba(18, 24, 38, 0.9);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      padding: 14px;
+      border-radius: 14px;
+    }
+
+    .custom-time-panel.show {
+      display: block;
+      animation: popIn 0.2s ease forwards;
+    }
+
+    .custom-time-title {
+      font-size: 0.8rem;
+      color: var(--gold-light);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .time-input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .time-input {
+      flex: 1;
+      background: rgba(8, 12, 20, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       color: #fff;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color-scheme: dark;
+      outline: none;
+    }
+
+    .time-input:focus {
+      border-color: var(--gold-primary);
+    }
+
+    .btn-calc-custom {
+      width: 100%;
+      padding: 10px 0;
+      border-radius: 10px;
+      border: 1px solid var(--gold-primary);
+      background: rgba(212, 175, 55, 0.15);
+      color: var(--gold-light);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+
+    .btn-calc-custom:active {
+      background: var(--gold-primary);
+      color: #0b0f19;
     }
 
     /* 历史记录面板 */
@@ -489,18 +556,31 @@
     </div>
   </div>
 
-  <!-- 交互核心按钮 -->
+  <!-- 交互核心按钮（当前时刻） -->
   <div class="btn-action-wrapper">
     <button class="trigger-btn" id="btnCast" onclick="triggerCast()">
       <span>起心动念 · 触机起卦</span>
     </button>
-    <div class="btn-tip">捕捉毫秒级时空脉动，按 Enter 键亦可起卦</div>
+    <div class="btn-tip">捕捉当前毫秒时空脉动，按 Enter 键亦可起卦</div>
   </div>
 
   <!-- 辅助功能条 -->
   <div class="utility-bar">
+    <button class="btn-sub" id="btnToggleTime" onclick="toggleCustomTimePanel()">⏳ 指定时空补算</button>
     <button class="btn-sub" id="btnCopy" onclick="copyResult()">📋 复制号码</button>
     <button class="btn-sub" onclick="toggleHistory()">📜 历史卦印</button>
+  </div>
+
+  <!-- 手动指定时间补算抽屉 -->
+  <div class="custom-time-panel" id="customTimePanel">
+    <div class="custom-time-title">
+      <span>输入记忆中的动念时空：</span>
+      <span style="font-size: 0.72rem; color: var(--gold-primary); cursor: pointer;" onclick="fillCurrentTimeToInput()">填入当前时刻</span>
+    </div>
+    <div class="time-input-group">
+      <input type="datetime-local" step="1" class="time-input" id="customDateTimeInput">
+    </div>
+    <button class="btn-calc-custom" onclick="triggerCustomCast()">按此时空起卦推演</button>
   </div>
 
   <!-- 历史记录面板 -->
@@ -631,20 +711,62 @@
       LINES_INDEX[getLinesKey(TRIGRAMS[k].lines)] = parseInt(k);
     }
 
-    function triggerCast() {
-      playChime();
-      triggerHaptic();
+    // 手动时间面板交互
+    function toggleCustomTimePanel() {
+      const panel = document.getElementById('customTimePanel');
+      const btn = document.getElementById('btnToggleTime');
+      panel.classList.toggle('show');
+      btn.classList.toggle('active', panel.classList.contains('show'));
+      if (panel.classList.contains('show')) {
+        fillCurrentTimeToInput();
+      }
+    }
 
+    function fillCurrentTimeToInput() {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('customDateTimeInput').value = now.toISOString().slice(0, 19);
+    }
+
+    // 触发自定义时间起卦
+    function triggerCustomCast() {
+      const inputVal = document.getElementById('customDateTimeInput').value;
+      if (!inputVal) {
+        showToast("请先选择时间");
+        return;
+      }
+      const targetDate = new Date(inputVal);
+      if (isNaN(targetDate.getTime())) {
+        showToast("时间格式不正确");
+        return;
+      }
+      // 以手动输入时间的秒与毫秒混合伪随机因子
+      const fakeMs = (targetDate.getSeconds() * 17 + targetDate.getMinutes() * 13) % 1000;
+      const fakePerf = (targetDate.getTime() % 100000);
+      executeIChingCore(targetDate, fakeMs, fakePerf, true);
+      document.getElementById('customTimePanel').classList.remove('show');
+      document.getElementById('btnToggleTime').classList.remove('active');
+    }
+
+    // 默认触发：当下瞬间起卦
+    function triggerCast() {
       const now = new Date();
       const ms = now.getMilliseconds();
       const perfNow = Math.floor(performance.now() * 1000) % 100000;
+      executeIChingCore(now, ms, perfNow, false);
+    }
 
-      const y = now.getFullYear();
-      const m = now.getMonth() + 1;
-      const d = now.getDate();
-      const h = now.getHours();
-      const min = now.getMinutes();
-      const s = now.getSeconds();
+    // 核心起卦推算底层逻辑
+    function executeIChingCore(dt, ms, perfSeed, isCustom) {
+      playChime();
+      triggerHaptic();
+
+      const y = dt.getFullYear();
+      const m = dt.getMonth() + 1;
+      const d = dt.getDate();
+      const h = dt.getHours();
+      const min = dt.getMinutes();
+      const s = dt.getSeconds();
 
       const upperNum = modVal(y + m + d, 8);
       const lowerNum = modVal(y + m + d + h + min + s, 8);
@@ -672,24 +794,25 @@
       document.getElementById('movingLineText').innerText = `第 ${movingLine} 爻`;
       document.getElementById('mutualText').innerText = `${TRIGRAMS[mutUpperNum].name} / ${TRIGRAMS[mutLowerNum].name}`;
       
-      const cosmicSeed = (upperNum * 7 + lowerNum * 5 + movingLine * 3 + (perfNow % 49)) % 99 + 1;
+      const cosmicSeed = (upperNum * 7 + lowerNum * 5 + movingLine * 3 + (perfSeed % 49)) % 99 + 1;
       document.getElementById('cosmicNumText').innerText = `${cosmicSeed}`;
 
+      const prefixTag = isCustom ? "【时空补遗】" : "";
       const timeStr = `${y}-${pad(m)}-${pad(d)} ${pad(h)}:${pad(min)}:${pad(s)}.${pad(ms, 3)}`;
-      document.getElementById('timestampBox').innerText = `时空切片：${timeStr}`;
+      document.getElementById('timestampBox').innerText = `时空切片：${prefixTag}${timeStr}`;
 
       if (currentMode === 'marksix') {
-        const numbers = generateMarkSix(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfNow);
+        const numbers = generateMarkSix(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfSeed);
         renderMarkSixBalls(numbers);
-        lastResult = { mode: '六合彩', time: timeStr, balls: numbers.join(', ') };
+        lastResult = { mode: isCustom ? '六合彩·补' : '六合彩', time: timeStr, balls: numbers.join(', ') };
       } else if (currentMode === 'ssq') {
-        const ssqRes = generateSSQ(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfNow, ms);
+        const ssqRes = generateSSQ(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfSeed, ms);
         renderSSQBalls(ssqRes);
-        lastResult = { mode: '双色球', time: timeStr, balls: `红:${ssqRes.reds.join(',')} 蓝:${ssqRes.blue}` };
+        lastResult = { mode: isCustom ? '双色球·补' : '双色球', time: timeStr, balls: `红:${ssqRes.reds.join(',')} 蓝:${ssqRes.blue}` };
       } else if (currentMode === 'dlt') {
-        const dltRes = generateDLT(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfNow, ms);
+        const dltRes = generateDLT(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfSeed, ms);
         renderDLTBalls(dltRes);
-        lastResult = { mode: '大乐透', time: timeStr, balls: `前:${dltRes.fronts.join(',')} 后:${dltRes.backs.join(',')}` };
+        lastResult = { mode: isCustom ? '大乐透·补' : '大乐透', time: timeStr, balls: `前:${dltRes.fronts.join(',')} 后:${dltRes.backs.join(',')}` };
       }
 
       saveHistory(lastResult);
@@ -706,7 +829,6 @@
       });
     }
 
-    // 六合彩算法 (49选6)
     function generateMarkSix(up, low, mov, mutUp, transUp, perf) {
       const seeds = [
         up * 6 + low,
@@ -744,7 +866,6 @@
       return c === 'red' ? '红波' : (c === 'blue' ? '蓝波' : '绿波');
     }
 
-    // 双色球算法 (6红 1-33 + 1蓝 1-16)
     function generateSSQ(up, low, mov, mutUp, transUp, perf, ms) {
       const seeds = [
         up * 5 + low,
@@ -789,15 +910,13 @@
       container.appendChild(blueBall);
     }
 
-    // 体彩大乐透算法 (前区5红 1-35 + 后区2蓝 1-12)
     function generateDLT(up, low, mov, mutUp, transUp, perf, ms) {
-      // 前区 5 个红球：五行流转生克数
       const frontSeeds = [
-        up * 5 + low,            // 金位主气
-        mov * 7 + up,            // 木位机变
-        mutUp * 6 + transUp,     // 水位内在
-        transUp * 4 + low,       // 火位发越
-        (up + low + mov) * 3     // 土位汇纳
+        up * 5 + low,
+        mov * 7 + up,
+        mutUp * 6 + transUp,
+        transUp * 4 + low,
+        (up + low + mov) * 3
       ];
       const frontSteps = [up, low, mov, mutUp, 7];
       const fronts = [];
@@ -807,7 +926,6 @@
       });
       fronts.sort((a, b) => a - b);
 
-      // 后区 2 个蓝球：十二地支阴阳枢纽 (1-12)
       const back1Seed = (up + low) * mov + (ms % 12);
       const back1 = modVal(back1Seed, 12);
 
