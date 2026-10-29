@@ -550,3 +550,366 @@
         const gain1 = audioCtx.createGain();
         osc1.type = 'sine';
         osc1.frequency.setValueAtTime(146.83, now);
+        osc1.frequency.exponentialRampToValueAtTime(144.0, now + 2.5);
+        gain1.gain.setValueAtTime(0.45, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(220.0, now);
+        gain2.gain.setValueAtTime(0.2, now);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 2.8);
+        osc2.stop(now + 2.8);
+      } catch (e) {
+        console.log("Audio not supported", e);
+      }
+    }
+
+    function triggerHaptic() {
+      if (navigator.vibrate) {
+        navigator.vibrate([25, 40, 20]);
+      }
+    }
+
+    function switchMode(mode) {
+      if (currentMode === mode) return;
+      currentMode = mode;
+      document.getElementById('tabMarkSix').classList.toggle('active', mode === 'marksix');
+      document.getElementById('tabSSQ').classList.toggle('active', mode === 'ssq');
+      document.getElementById('tabDLT').classList.toggle('active', mode === 'dlt');
+      resetToPlaceholder();
+    }
+
+    function resetToPlaceholder() {
+      document.getElementById('timestampBox').innerText = '时空切片：虚位以待 · 静候机发';
+      document.getElementById('primaryName').innerText = '待起卦';
+      document.getElementById('transformedName').innerText = '待演化';
+      document.getElementById('movingLineText').innerText = '-';
+      document.getElementById('mutualText').innerText = '-';
+      document.getElementById('cosmicNumText').innerText = '-';
+
+      const placeholderLines = Array(6).fill('<div class="hex-line placeholder"></div>').join('');
+      document.getElementById('primaryLines').innerHTML = placeholderLines;
+      document.getElementById('transformedLines').innerHTML = placeholderLines;
+
+      const ballContainer = document.getElementById('ballContainer');
+      let modeName = '六合彩';
+      if (currentMode === 'ssq') modeName = '双色球';
+      if (currentMode === 'dlt') modeName = '大乐透';
+      ballContainer.innerHTML = `<div class="empty-hint">当前模式：${modeName} · 点击金钮起卦</div>`;
+      lastResult = null;
+    }
+
+    function modVal(val, m) {
+      const r = val % m;
+      return r === 0 ? m : r;
+    }
+
+    function ensureUnique(base, step, pool, maxVal) {
+      let cand = modVal(base, maxVal);
+      while (pool.includes(cand)) {
+        cand = modVal(cand + step, maxVal);
+      }
+      return cand;
+    }
+
+    function getLinesKey(lines) {
+      return lines.join('');
+    }
+
+    const LINES_INDEX = {};
+    for (let k in TRIGRAMS) {
+      LINES_INDEX[getLinesKey(TRIGRAMS[k].lines)] = parseInt(k);
+    }
+
+    function triggerCast() {
+      playChime();
+      triggerHaptic();
+
+      const now = new Date();
+      const ms = now.getMilliseconds();
+      const perfNow = Math.floor(performance.now() * 1000) % 100000;
+
+      const y = now.getFullYear();
+      const m = now.getMonth() + 1;
+      const d = now.getDate();
+      const h = now.getHours();
+      const min = now.getMinutes();
+      const s = now.getSeconds();
+
+      const upperNum = modVal(y + m + d, 8);
+      const lowerNum = modVal(y + m + d + h + min + s, 8);
+      const movingLine = modVal(y + m + d + h + min + s + ms, 6);
+
+      const upperTrigram = TRIGRAMS[upperNum];
+      const lowerTrigram = TRIGRAMS[lowerNum];
+
+      const primaryLines = [...lowerTrigram.lines, ...upperTrigram.lines];
+
+      const mutLowerNum = LINES_INDEX[getLinesKey([primaryLines[1], primaryLines[2], primaryLines[3]])] || 1;
+      const mutUpperNum = LINES_INDEX[getLinesKey([primaryLines[2], primaryLines[3], primaryLines[4]])] || 1;
+
+      const transLines = [...primaryLines];
+      transLines[movingLine - 1] = 1 - transLines[movingLine - 1];
+      const transLowerNum = LINES_INDEX[getLinesKey(transLines.slice(0, 3))] || 1;
+      const transUpperNum = LINES_INDEX[getLinesKey(transLines.slice(3, 6))] || 1;
+
+      renderLines('primaryLines', primaryLines, movingLine);
+      renderLines('transformedLines', transLines, null);
+
+      document.getElementById('primaryName').innerText = `${upperTrigram.name}为${upperTrigram.symbol} / ${lowerTrigram.name}为${lowerTrigram.symbol}`;
+      document.getElementById('transformedName').innerText = `${TRIGRAMS[transUpperNum].name}上 / ${TRIGRAMS[transLowerNum].name}下`;
+
+      document.getElementById('movingLineText').innerText = `第 ${movingLine} 爻`;
+      document.getElementById('mutualText').innerText = `${TRIGRAMS[mutUpperNum].name} / ${TRIGRAMS[mutLowerNum].name}`;
+      
+      const cosmicSeed = (upperNum * 7 + lowerNum * 5 + movingLine * 3 + (perfNow % 49)) % 99 + 1;
+      document.getElementById('cosmicNumText').innerText = `${cosmicSeed}`;
+
+      const timeStr = `${y}-${pad(m)}-${pad(d)} ${pad(h)}:${pad(min)}:${pad(s)}.${pad(ms, 3)}`;
+      document.getElementById('timestampBox').innerText = `时空切片：${timeStr}`;
+
+      if (currentMode === 'marksix') {
+        const numbers = generateMarkSix(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfNow);
+        renderMarkSixBalls(numbers);
+        lastResult = { mode: '六合彩', time: timeStr, balls: numbers.join(', ') };
+      } else if (currentMode === 'ssq') {
+        const ssqRes = generateSSQ(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfNow, ms);
+        renderSSQBalls(ssqRes);
+        lastResult = { mode: '双色球', time: timeStr, balls: `红:${ssqRes.reds.join(',')} 蓝:${ssqRes.blue}` };
+      } else if (currentMode === 'dlt') {
+        const dltRes = generateDLT(upperNum, lowerNum, movingLine, mutUpperNum, transUpperNum, perfNow, ms);
+        renderDLTBalls(dltRes);
+        lastResult = { mode: '大乐透', time: timeStr, balls: `前:${dltRes.fronts.join(',')} 后:${dltRes.backs.join(',')}` };
+      }
+
+      saveHistory(lastResult);
+    }
+
+    function renderLines(containerId, lines, movingLineIdx) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      lines.forEach((val, idx) => {
+        const lineEl = document.createElement('div');
+        const isMoving = movingLineIdx === (idx + 1);
+        lineEl.className = `hex-line ${val === 1 ? 'yang' : 'yin'} ${isMoving ? 'moving' : ''}`;
+        container.appendChild(lineEl);
+      });
+    }
+
+    // 六合彩算法 (49选6)
+    function generateMarkSix(up, low, mov, mutUp, transUp, perf) {
+      const seeds = [
+        up * 6 + low,
+        mov * 8 + low,
+        mutUp * 7 + mov,
+        transUp * 5 + up,
+        (up + low + mov) * 3,
+        (perf % 49) + 1
+      ];
+      const steps = [up, low, mov, mutUp, transUp, 7];
+      const result = [];
+      seeds.forEach((seed, i) => {
+        const num = ensureUnique(seed, steps[i], result, 49);
+        result.push(num);
+      });
+      return result.sort((a, b) => a - b);
+    }
+
+    function renderMarkSixBalls(nums) {
+      const container = document.getElementById('ballContainer');
+      container.innerHTML = '';
+      nums.forEach(n => {
+        let colorClass = 'red';
+        if (MARK_SIX_COLORS.blue.includes(n)) colorClass = 'blue';
+        if (MARK_SIX_COLORS.green.includes(n)) colorClass = 'green';
+
+        const b = document.createElement('div');
+        b.className = `ball ${colorClass}`;
+        b.innerHTML = `<span>${pad(n)}</span><span class="element-tag">${getColorName(colorClass)}</span>`;
+        container.appendChild(b);
+      });
+    }
+
+    function getColorName(c) {
+      return c === 'red' ? '红波' : (c === 'blue' ? '蓝波' : '绿波');
+    }
+
+    // 双色球算法 (6红 1-33 + 1蓝 1-16)
+    function generateSSQ(up, low, mov, mutUp, transUp, perf, ms) {
+      const seeds = [
+        up * 5 + low,
+        mov * 6 + low,
+        mutUp * 7 + mov,
+        transUp * 4 + up,
+        (up + low + mov) * 2,
+        (perf % 33) + 1
+      ];
+      const steps = [up, low, mov, mutUp, transUp, 5];
+      const reds = [];
+      seeds.forEach((seed, i) => {
+        const num = ensureUnique(seed, steps[i], reds, 33);
+        reds.push(num);
+      });
+      reds.sort((a, b) => a - b);
+
+      const blueSeed = (up + low) * transUp + (mov * 7);
+      const blue = modVal(blueSeed + (ms % 16), 16);
+
+      return { reds, blue };
+    }
+
+    function renderSSQBalls(res) {
+      const container = document.getElementById('ballContainer');
+      container.innerHTML = '';
+      res.reds.forEach(n => {
+        const b = document.createElement('div');
+        b.className = 'ball red';
+        b.innerHTML = `<span>${pad(n)}</span><span class="element-tag">红</span>`;
+        container.appendChild(b);
+      });
+
+      const sep = document.createElement('div');
+      sep.className = 'ball-separator';
+      sep.innerText = '+';
+      container.appendChild(sep);
+
+      const blueBall = document.createElement('div');
+      blueBall.className = 'ball target-blue';
+      blueBall.innerHTML = `<span>${pad(res.blue)}</span><span class="element-tag">蓝</span>`;
+      container.appendChild(blueBall);
+    }
+
+    // 体彩大乐透算法 (前区5红 1-35 + 后区2蓝 1-12)
+    function generateDLT(up, low, mov, mutUp, transUp, perf, ms) {
+      // 前区 5 个红球：五行流转生克数
+      const frontSeeds = [
+        up * 5 + low,            // 金位主气
+        mov * 7 + up,            // 木位机变
+        mutUp * 6 + transUp,     // 水位内在
+        transUp * 4 + low,       // 火位发越
+        (up + low + mov) * 3     // 土位汇纳
+      ];
+      const frontSteps = [up, low, mov, mutUp, 7];
+      const fronts = [];
+      frontSeeds.forEach((seed, i) => {
+        const num = ensureUnique(seed, frontSteps[i], fronts, 35);
+        fronts.push(num);
+      });
+      fronts.sort((a, b) => a - b);
+
+      // 后区 2 个蓝球：十二地支阴阳枢纽 (1-12)
+      const back1Seed = (up + low) * mov + (ms % 12);
+      const back1 = modVal(back1Seed, 12);
+
+      const backs = [back1];
+      const back2Seed = (transUp * 5 + mutUp) + (perf % 12);
+      const back2 = ensureUnique(back2Seed, mov || 3, backs, 12);
+      backs.push(back2);
+      backs.sort((a, b) => a - b);
+
+      return { fronts, backs };
+    }
+
+    function renderDLTBalls(res) {
+      const container = document.getElementById('ballContainer');
+      container.innerHTML = '';
+      res.fronts.forEach(n => {
+        const b = document.createElement('div');
+        b.className = 'ball red';
+        b.innerHTML = `<span>${pad(n)}</span><span class="element-tag">前区</span>`;
+        container.appendChild(b);
+      });
+
+      const sep = document.createElement('div');
+      sep.className = 'ball-separator';
+      sep.innerText = '+';
+      container.appendChild(sep);
+
+      res.backs.forEach(n => {
+        const b = document.createElement('div');
+        b.className = 'ball target-blue';
+        b.innerHTML = `<span>${pad(n)}</span><span class="element-tag">后区</span>`;
+        container.appendChild(b);
+      });
+    }
+
+    function pad(n, len = 2) {
+      return String(n).padStart(len, '0');
+    }
+
+    function copyResult() {
+      if (!lastResult) {
+        showToast("请先点击起卦生成号码");
+        return;
+      }
+      const text = `【${lastResult.mode}·周易择数】\n号码：${lastResult.balls}\n时空：${lastResult.time}`;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("已复制卦数到剪贴板");
+      }).catch(() => {
+        showToast("复制失败，请截图保存");
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1600);
+    }
+
+    function saveHistory(item) {
+      let records = JSON.parse(localStorage.getItem('iching_history') || '[]');
+      records.unshift(item);
+      if (records.length > 10) records.pop();
+      localStorage.setItem('iching_history', JSON.stringify(records));
+      loadHistory();
+    }
+
+    function loadHistory() {
+      const records = JSON.parse(localStorage.getItem('iching_history') || '[]');
+      const listEl = document.getElementById('historyList');
+      if (records.length === 0) {
+        listEl.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:10px;">暂无卦印存根</div>';
+        return;
+      }
+      listEl.innerHTML = records.map(r => `
+        <div class="history-item">
+          <div>
+            <span style="color:var(--gold-light); font-weight:500;">[${r.mode}]</span>
+            <span class="history-nums">${r.balls}</span>
+          </div>
+          <div class="history-time">${r.time.split(' ')[1] || ''}</div>
+        </div>
+      `).join('');
+    }
+
+    function toggleHistory() {
+      const card = document.getElementById('historyCard');
+      card.classList.toggle('show');
+      if (card.classList.contains('show')) loadHistory();
+    }
+
+    function clearHistory() {
+      localStorage.removeItem('iching_history');
+      loadHistory();
+      showToast("存根已清空");
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') triggerCast();
+    });
+
+    loadHistory();
+  </script>
+</body>
+</html>
